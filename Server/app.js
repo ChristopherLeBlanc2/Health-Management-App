@@ -2,29 +2,22 @@ require("dotenv").config();
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+// var cookieParser = require('cookie-parser');
+// var logger = require('morgan');
+const db = require('./db.js')
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-const db = require("./db");
 var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-app.use(logger('dev'));
+// app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+// app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
-});
 
 // error handler
 app.use(function(err, req, res, next) {
@@ -37,9 +30,39 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
+// app.get('/getUser', db.getUser)
 
+app.get('/getAllMeds', db.getAllMeds)
 
-app.listen(process.env.PORT);
-console.log(`Listening at http://localhost:${process.env.PORT}`);
+app.get('/getUserMeds', db.getUserMeds)
+
+app.post('/addUser', db.createUser)
+
+app.post("/addUserMedication", async function (req, res) {
+  // const rows = await db.getMedication(req.body.medName);
+  let medicineId = req.body.medicine
+
+  if (typeof req.body.medicine === 'string') {
+    const result = await db.createMedication(req.body.medicine);
+    medicineId = result.rows[0].medication_id
+  }
+
+  await db.createUserMedication(
+    req.body.notificationTime,
+    req.body.user_id,
+    medicineId
+  );
+
+  res.end()
+});
+
+app.delete('/deleteUserMedicine', db.deleteUserMedicine)
+
+// app.put('/changeMedication', db.changeMedication)
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  next(createError(404));
+});
 
 module.exports = app;
