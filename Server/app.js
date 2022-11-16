@@ -30,7 +30,7 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-// app.get('/getUser', db.getUser)
+app.get('/getUser', db.getUser)
 
 app.get('/getAllMeds', db.getAllMeds)
 

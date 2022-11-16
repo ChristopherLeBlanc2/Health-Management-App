@@ -19,18 +19,33 @@ client.connect()
   console.log(err)
 })
 
+const getUser = (req, res) => {
+  client.query(`
+    SELECT * FROM "Medications"
+    WHERE user_name = ${req.body.user_name} AND user_hashedPW = ${req.body.user_hashedPW}
+  `)
+  .then((data) => {
+    console.log(data.rows)
+    res.send(data.rows)
+  })
+  .catch((err) => {
+    console.log(err)
+    res.end()
+  })
+}
+
 const getAllMeds = (req, res) => {
   client.query(`
-  SELECT * FROM "Medications"
-`)
-.then((data) => {
-console.log(data.rows)
-res.send(data.rows)
-})
-.catch((err) => {
-console.log(err)
-res.end()
-})
+    SELECT * FROM "Medications"
+  `)
+  .then((data) => {
+    console.log(data.rows)
+    res.send(data.rows)
+  })
+  .catch((err) => {
+    console.log(err)
+    res.end()
+  })
 }
 
 const getMedication = (medName, dose) => {
@@ -110,4 +125,4 @@ const deleteUserMedicine = (req,res) => {
   })
 }
 
-module.exports = { client, createUser, createUserMedication, deleteUserMedicine, getAllMeds, getMedication, createMedication, getUserMeds}
+module.exports = { client, createUser, createUserMedication, deleteUserMedicine, getAllMeds, getMedication, createMedication, getUserMeds, getUser }
