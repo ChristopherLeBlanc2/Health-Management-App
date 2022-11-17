@@ -1,6 +1,8 @@
 const {Client} = require('pg');
 // require pg from 'postgres'
 require('dotenv').config();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const client = new Client({
   host: process.env.URL,
@@ -19,14 +21,18 @@ client.connect()
   console.log(err)
 })
 
+const generateAccessToken = user => {
+  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30m' });
+};
+
 const getUser = (req, res) => {
   client.query(`
-    SELECT * FROM "Medications"
-    WHERE user_name = ${req.body.user_name} AND user_hashedPW = ${req.body.user_hashedPW}
+    SELECT * FROM "Users"
+    WHERE user_id = ${req.body.user_id}
   `)
   .then((data) => {
     console.log(data.rows)
-    res.send(data.rows)
+    res.send(data.rows[0])
   })
   .catch((err) => {
     console.log(err)
@@ -62,30 +68,59 @@ const getUserMeds = (req, res) => {
   client.query(`
     SELECT * FROM "UsersMedications"
       WHERE user_id = ${req.body.user_id}
-`)
-.then((data) => {
-  console.log(data.rows)
-  res.send(data.rows)
-})
-.catch((err) => {
-  console.log('User not created:', err)
-  res.end()
-})
-}
-
-const createUser = (req, res) => {
-  client.query(`
-    INSERT INTO "Users" (user_name, "user_hashedPW", "user_cellNumber")
-      VALUES ('${req.body.name}', '${req.body.password}', ${req.body.cell})
   `)
-  .then(() => {
-    console.log('User Created')
-    res.end()
+  .then((data) => {
+    console.log(data.rows)
+    res.send(data.rows)
   })
   .catch((err) => {
     console.log('User not created:', err)
     res.end()
   })
+}
+
+const logIn = async (req, res) => {
+  try {
+    const results = await client.query(`SELECT "user_hashedPW" FROM "Users" WHERE user_name = '${req.body.username}'`)
+    console.log(results)
+    const doesMatch = await bcrypt.compare(req.body.password, results.rows[0].user_hashedPW)
+    if (doesMatch) {
+      const result = await client.query(`
+      SELECT * FROM "Users"
+      WHERE user_name = '${req.body.username}'
+      `)
+      const accessToken = generateAccessToken({ userId: result.rows[0].user_id });
+      console.log(accessToken)
+      res.send(accessToken)
+    }
+  } catch (err) {
+    console.log(err)
+    res.end()
+  }
+};
+
+
+
+const createUser = async (req, res) => {
+  try {
+    const saltRounds = 10;
+    const hash = await bcrypt.hash(req.body.password, saltRounds)
+    await client.query(`
+      INSERT INTO "Users" (user_name, "user_hashedPW", "user_cellNumber")
+        VALUES ('${req.body.name}', '${hash}', ${req.body.cell})
+    `)
+    console.log('User Created')
+    const result = await client.query(`
+      SELECT * FROM "Users"
+      WHERE user_name = '${req.body.name}'
+    `)
+    const accessToken = generateAccessToken({ userId: result.rows[0].user_id });
+    console.log(accessToken)
+    res.send(accessToken)
+  } catch (err) {
+    console.log(err)
+    res.end()
+  }
 }
 
 const createMedication = (medicine) => {
@@ -110,10 +145,10 @@ const createUserMedication = (notificationTime, user_id, medication_id) => {
   })
 }
 
-const deleteUserMedicine = (req,res) => {
+const deleteUserMedicine = (req, res) => {
   client.query(`
     DELETE FROM "UsersMedications"
-      WHERE usersMedications_id = '${req.body.usersMedications_id}'
+      WHERE "usersMedications_id" = '${req.body.usersMedications_id}'
   `)
   .then(() => {
     console.log('Med Deleted')
@@ -125,4 +160,4 @@ const deleteUserMedicine = (req,res) => {
   })
 }
 
-module.exports = { client, createUser, createUserMedication, deleteUserMedicine, getAllMeds, getMedication, createMedication, getUserMeds, getUser }
+module.exports = { client, createUser, createUserMedication, deleteUserMedicine, getAllMeds, getMedication, createMedication, getUserMeds, getUser, logIn }

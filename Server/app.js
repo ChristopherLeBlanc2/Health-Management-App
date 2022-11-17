@@ -5,6 +5,7 @@ var path = require('path');
 // var cookieParser = require('cookie-parser');
 // var logger = require('morgan');
 const db = require('./db.js')
+const jwt = require('jsonwebtoken');
 
 var app = express();
 
@@ -30,15 +31,37 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-app.get('/getUser', db.getUser)
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1];
 
-app.get('/getAllMeds', db.getAllMeds)
+  if (!token) {
+    return res.sendStatus(401);
+  }
 
-app.get('/getUserMeds', db.getUserMeds)
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, userId) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      req.user_id = userId;
+      next();
+    }
+  });
+  return undefined;
+};
+
+
+app.get('/getUser', authenticateToken, db.getUser)
+
+app.get('/getAllMeds', authenticateToken, db.getAllMeds)
+
+app.get('/getUserMeds', authenticateToken, db.getUserMeds)
+
+app.post('/userLogIn', db.logIn)
 
 app.post('/addUser', db.createUser)
 
-app.post("/addUserMedication", async function (req, res) {
+app.post("/addUserMedication", authenticateToken, async function (req, res) {
   // const rows = await db.getMedication(req.body.medName);
   let medicineId = req.body.medicine
 
@@ -56,7 +79,7 @@ app.post("/addUserMedication", async function (req, res) {
   res.end()
 });
 
-app.delete('/deleteUserMedicine', db.deleteUserMedicine)
+app.delete('/deleteUserMedicine', authenticateToken, db.deleteUserMedicine)
 
 // app.put('/changeMedication', db.changeMedication)
 
