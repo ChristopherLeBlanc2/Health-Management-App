@@ -6,8 +6,22 @@ var path = require('path');
 // var logger = require('morgan');
 const db = require('./db.js')
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
+
+
 
 var app = express();
+
+const allowedOrigins = [
+  'http://localhost:5173',
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  }),
+);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -32,18 +46,18 @@ app.use(function(err, req, res, next) {
 });
 
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(' ')[1];
+  const cookieHeader = req.headers.cookie;
+  const token = cookieHeader?.split('=')[1];
 
   if (!token) {
     return res.sendStatus(401);
   }
 
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, userId) => {
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, tokenInfo) => {
     if (err) {
       res.sendStatus(403);
     } else {
-      req.user_id = userId;
+      req.body.user_id = tokenInfo.userId;
       next();
     }
   });
@@ -61,6 +75,7 @@ app.post('/userLogIn', db.logIn)
 
 app.post('/addUser', db.createUser)
 
+
 app.post("/addUserMedication", authenticateToken, async function (req, res) {
   // const rows = await db.getMedication(req.body.medName);
   let medicineId = req.body.medicine
@@ -75,7 +90,6 @@ app.post("/addUserMedication", authenticateToken, async function (req, res) {
     req.body.user_id,
     medicineId
   );
-
   res.end()
 });
 
@@ -85,6 +99,7 @@ app.delete('/deleteUserMedicine', authenticateToken, db.deleteUserMedicine)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
+  console.log(req)
   next(createError(404));
 });
 

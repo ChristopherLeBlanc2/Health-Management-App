@@ -46,7 +46,7 @@ const getAllMeds = (req, res) => {
   `)
   .then((data) => {
     console.log(data.rows)
-    res.send(data.rows)
+    res.json(data.rows)
   })
   .catch((err) => {
     console.log(err)
@@ -65,6 +65,7 @@ const getMedication = (medName, dose) => {
 }
 
 const getUserMeds = (req, res) => {
+  console.log(req.body)
   client.query(`
     SELECT * FROM "UsersMedications"
       WHERE user_id = ${req.body.user_id}
@@ -91,8 +92,9 @@ const logIn = async (req, res) => {
       `)
       const accessToken = generateAccessToken({ userId: result.rows[0].user_id });
       console.log(accessToken)
-      res.send(accessToken)
+      res.json({token: accessToken})
     }
+    throw new Error()
   } catch (err) {
     console.log(err)
     res.end()
@@ -107,7 +109,7 @@ const createUser = async (req, res) => {
     const hash = await bcrypt.hash(req.body.password, saltRounds)
     await client.query(`
       INSERT INTO "Users" (user_name, "user_hashedPW", "user_cellNumber")
-        VALUES ('${req.body.name}', '${hash}', ${req.body.cell})
+        VALUES ('${req.body.userName}', '${hash}', ${req.body.cell})
     `)
     console.log('User Created')
     const result = await client.query(`
