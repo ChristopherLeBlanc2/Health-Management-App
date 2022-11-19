@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Image, Text, Button } from '@mantine/core';
 
 const UsersMedicationsCard = (props) => {
-
+console.log('props', props)
   return (
     <Card
       shadow="sm"
@@ -13,7 +13,7 @@ const UsersMedicationsCard = (props) => {
       target="_blank"
     >
       <Card.Section>
-        <Image
+        <Image style={{width: '150px'}}
           src="https://media.istockphoto.com/id/1199906477/vector/image-unavailable-icon.jpg?s=170667a&w=0&k=20&c=QRaXTJuDrWe8Mwi-w98RHoy8-TSdbFPaYFeyUqLidds="
           height={160}
           alt="No way!"
@@ -21,11 +21,11 @@ const UsersMedicationsCard = (props) => {
       </Card.Section>
 
       <Text weight={500} size="lg" mt="md">
-        {props.medicine.name}
+        {props.medicationName}
       </Text>
 
       <Text mt="xs" color="dimmed" size="sm">
-        {props.mediction.time}
+        {props.notificationTime}
       </Text>
       <Button variant="outline" >DELETE</Button>
     </Card>

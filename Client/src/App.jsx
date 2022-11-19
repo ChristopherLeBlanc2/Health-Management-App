@@ -9,6 +9,20 @@ import Title from './Title.jsx';
 import UsersMedications from './UsersMedications.jsx'
 
 
+/*
+finish FE inputs
+fill in the states with axios calls
+addUsersMedication process
+make sure FE is functional
+hash the passwords process
+session handlers and tokens sent (api authorization) tokens
+  possible corner cut of storing session in state
+    but not that much more work tbh
+git action to look for times
+twillio to send out notifications
+*/
+
+
 const App = (props) => {
 
   const [opened, setOpened] = useState(false);
@@ -16,25 +30,50 @@ const App = (props) => {
   const [allMedications, setAllMedications] = useState([])
   const [usersMedications, setUsersMedications] = useState([])
   const [logInInput, setLogInInput] = useState({
-    user_name: '',
-    hashedPW: ''
+    userName: '',
+    password: ''
   })
-  const [signUpInput, setSignUpInput] = UseState({
-    user_name: '',
-    hashedPW: '',
+  const [signUpInput, setSignUpInput] = useState({
+    userName: '',
+    password: '',
     cell: ''
   })
+
+  useEffect(() => {
+    axios.get('http://localhost:3000/getAllMeds')
+    .then((response) => {
+      const mappedMedications = response.data.map((medication) => {
+        return {label: medication.medication_name,
+                value: medication.medication_id.toString(),
+        }
+      })
+      setAllMedications(mappedMedications)
+    })
+  }, [])
+
+/*{
+  headers: {
+    Authorization: Bearer ${token}
+  }
+}
+*/
+
+
 
 const handleLogInChange = (e) => {
   const {name, value} = e.target;
   setLogInInput((state) => ({
-    state,
+    ...state,
     [name]: value
   }));
 }
 
-const handleLogInClick = (e) => {
-
+const handleLogInClick = async () => {
+    const result = await axios.post('http://localhost:3000/userLogIn', {
+        username: logInInput.userName,
+        password: logInInput.password
+    })
+    document.cookie = `token=${result.data.token}`
 }
 
 const handleSignUpChange = (e) => {
@@ -46,8 +85,16 @@ const handleSignUpChange = (e) => {
 }
 
 
-const handleSignUpClick = (e) => {
-
+const handleSignUpClick = async () => {
+  const result = await axios.post('http://localhost:3000/addUser', {
+    data: {
+      username: signUpInput.userName,
+      password: signUpInput.password,
+      cell: signUpInput.cell
+    }
+  })
+  console.log(result)
+  document.cookie = `token=${result.data}`
 }
 
 
@@ -71,7 +118,7 @@ const handleSignUpClick = (e) => {
                 <Input  placeholder="Your Username" type='text' id='userName' name='userName' value={logInInput.user_name} onChange={handleLogInChange} />
               </Input.Wrapper>
               <Input.Wrapper label="Your Password" required>
-                <Input  placeholder="Your Password" type='text' id='password' name='password' value={logInInput.hashedPW} onChange={handleLogInChange}/>
+                <Input  placeholder="Your Password" type='text' id='password' name='password' value={logInInput.password} onChange={handleLogInChange}/>
               </Input.Wrapper>
               <Button variant="outline" uppercase onClick={handleLogInClick}>
                 Log In
@@ -83,7 +130,7 @@ const handleSignUpClick = (e) => {
               <Input  placeholder="Your Username" type='text' id='signUpUserName' name='signUpUserName' value={signUpInput.user_name} onChange={handleSignUpChange} />
             </Input.Wrapper>
             <Input.Wrapper label="Your Password" required>
-              <Input  placeholder="Your Password" type='text' id='signUpPassword' name='signUpPassword' value={signUpInput.hashedPW} onChange={handleSignUpChange}/>
+              <Input  placeholder="Your Password" type='text' id='signUpPassword' name='signUpPassword' value={signUpInput.password} onChange={handleSignUpChange}/>
             </Input.Wrapper>
             <Input.Wrapper label="Your phone" required>
               <Input component={InputMask} mask="+1 (999) 999-9999"  placeholder="Your phone" type='text' id='cell' name='cell' value={signUpInput.cell} onChange={handleSignUpChange} />
@@ -99,7 +146,8 @@ const handleSignUpClick = (e) => {
     <div className="App">
       <Title setOpened={setOpened}/>
       <UsersMedications
-      setUserMedications={setUserMedications}
+      usersMedications={usersMedications}
+      setUsersMedications={setUsersMedications}
       allMedications={allMedications}
       currentUser={currentUser}
       />
